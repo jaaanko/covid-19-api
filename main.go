@@ -97,6 +97,15 @@ type CountrySummary struct {
 	Summary
 }
 
+type Country struct {
+	Name        string `json:"country"`
+	CountrySlug string `json:"countrySlug"`
+}
+
+type CountryList struct {
+	Countries []Country `json:"countries"`
+}
+
 func initDb() error {
 	var err error
 	dbUser := os.Getenv("DB_USER")
@@ -172,6 +181,7 @@ func main() {
 
 	router := mux.NewRouter()
 
+	router.HandleFunc("/list/countries", countriesList).Methods("GET")
 	router.HandleFunc("/world", world).Methods("GET")
 	router.HandleFunc("/summary", summary).Methods("GET")
 	router.HandleFunc("/timeseries/{countryslug}/{stat}", timeSeries).Methods("GET")
@@ -188,6 +198,39 @@ func generateCountrySlug(country string) string {
 	country = r.ReplaceAllString(country, "-")
 
 	return strings.ToLower(country)
+}
+
+func countriesList(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query(`
+	select country,country_slug from recoveries_time_series group by country_slug
+	`)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	countryList := new(CountryList)
+
+	for rows.Next() {
+		country := new(Country)
+		err := rows.Scan(&country.Name, &country.CountrySlug)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		countryList.Countries = append(countryList.Countries, *country)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	response, _ := json.Marshal(countryList)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write(response)
 }
 
 func world(w http.ResponseWriter, r *http.Request) {
