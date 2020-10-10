@@ -9,7 +9,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -176,6 +178,16 @@ func main() {
 	router.HandleFunc("/timeseries/total/{countryslug}/{stat}", timeSeriesTotal).Methods("GET")
 
 	http.ListenAndServe(":8080", router)
+}
+
+func generateCountrySlug(country string) string {
+	r := regexp.MustCompile("[^a-zA-Z- ]")
+	country = r.ReplaceAllString(country, "")
+
+	r = regexp.MustCompile(" ")
+	country = r.ReplaceAllString(country, "-")
+
+	return strings.ToLower(country)
 }
 
 func world(w http.ResponseWriter, r *http.Request) {
@@ -581,7 +593,7 @@ func saveRecoveries(recoveries *http.Response) {
 			recoveries, _ := strconv.Atoi(row[j+4])
 			date, _ := time.Parse("1/2/06", dates[j])
 
-			_, err = stmt.Exec(row[0], row[1], row[1], lat, long, recoveries, max(0, recoveries-prevRecoveries), date)
+			_, err = stmt.Exec(row[0], row[1], generateCountrySlug(row[1]), lat, long, recoveries, max(0, recoveries-prevRecoveries), date)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -659,7 +671,7 @@ func saveConfirmedAndDeaths(confirmedCasesRes *http.Response, deathsRes *http.Re
 			confirmed, _ := strconv.Atoi(confirmedCasesRow[j+4])
 			date, _ := time.Parse("1/2/06", dates[j])
 
-			_, err = stmt.Exec(confirmedCasesRow[0], confirmedCasesRow[1], confirmedCasesRow[1], lat, long, confirmed,
+			_, err = stmt.Exec(confirmedCasesRow[0], confirmedCasesRow[1], generateCountrySlug(confirmedCasesRow[1]), lat, long, confirmed,
 				max(0, confirmed-prevConfirmed), deaths, max(0, deaths-prevDeaths), date)
 
 			if err != nil {
