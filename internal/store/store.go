@@ -2,12 +2,12 @@ package store
 
 import "time"
 
-type CaseStatus int
+type CaseStatus string
 
 const (
-	Confirmed CaseStatus = iota
-	Recoveries
-	Deaths
+	Confirmed  CaseStatus = "Confirmed"
+	Recoveries            = "Recoveries"
+	Deaths                = "Deaths"
 )
 
 type Country struct {
@@ -17,9 +17,9 @@ type Country struct {
 
 type Location struct {
 	Country
-	Province  string  `json:"province"`
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
+	Province  string   `json:"province"`
+	Latitude  *float64 `json:"latitude,omitempty"`
+	Longitude *float64 `json:"longitude,omitempty"`
 }
 
 type CovidStats struct {
@@ -55,8 +55,8 @@ type TimeSeries struct {
 
 type Service interface {
 	GetCountries() ([]Country, error)
-	GetGlobalStats() (CovidStats, error)
-	GetSummary() ([]Summary, error)
-	GetTimeSeries(countrySlug string) (TimeSeries, error)
-	GetAggTimeSeries(countrySlug string) (TimeSeries, error)
+	GetGlobalStats() (*CovidStats, error)
+	GetSummary() (*Summary, error)
+	GetTimeSeries(countrySlug string, status CaseStatus) (*TimeSeries, error)
+	GetAggTimeSeries(countrySlug string, status CaseStatus) (*TimeSeries, error)
 }
