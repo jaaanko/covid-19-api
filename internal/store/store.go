@@ -2,12 +2,24 @@ package store
 
 import "time"
 
+type CaseStatus int
+
+const (
+	Confirmed CaseStatus = iota
+	Recoveries
+	Deaths
+)
+
+type Country struct {
+	Name string `json:"countryName"`
+	Slug string `json:"countrySlug"`
+}
+
 type Location struct {
-	CountryName string  `json:"country"`
-	CountrySlug string  `json:"slug"`
-	Province    string  `json:"province"`
-	Latitude    float64 `json:"latitude"`
-	Longitude   float64 `json:"longitude"`
+	Country
+	Province  string  `json:"province"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 type CovidStats struct {
@@ -19,21 +31,32 @@ type CovidStats struct {
 	NewDeaths     int64 `json:"newDeaths"`
 }
 
-type LocationCovidStats struct {
+type LocationStats struct {
 	Location
 	CovidStats
 }
 
-type GlobalSummary struct {
+type Summary struct {
 	CovidStats
-	ListOfLocationCovidStats []LocationCovidStats `json:"countries"`
+	LocationStatsList []LocationStats `json:"countries"`
 }
 
 type TimeSeriesDataPoint struct {
-	LocationCovidStats
-	Date time.Time `json:"date"`
+	Location
+	Amount int64
+	New    int64
+	Status CaseStatus
+	Date   time.Time `json:"date"`
 }
 
 type TimeSeries struct {
-	DataPoints []TimeSeriesDataPoint `json:"timeseries"`
+	DataPoints []TimeSeriesDataPoint `json:"timeSeries"`
+}
+
+type Service interface {
+	GetCountries() ([]Country, error)
+	GetGlobalStats() (CovidStats, error)
+	GetSummary() ([]Summary, error)
+	GetTimeSeries(countrySlug string) (TimeSeries, error)
+	GetAggTimeSeries(countrySlug string) (TimeSeries, error)
 }
