@@ -1,13 +1,14 @@
 package store
 
-import "time"
-
-type CaseStatus string
+import (
+	"database/sql"
+	"time"
+)
 
 const (
-	Confirmed  CaseStatus = "Confirmed"
-	Recoveries            = "Recoveries"
-	Deaths                = "Deaths"
+	Confirmed  string = "confirmed"
+	Recoveries        = "recoveries"
+	Deaths            = "deaths"
 )
 
 type Country struct {
@@ -17,9 +18,9 @@ type Country struct {
 
 type Location struct {
 	Country
-	Province  string   `json:"province"`
-	Latitude  *float64 `json:"latitude,omitempty"`
-	Longitude *float64 `json:"longitude,omitempty"`
+	Province  string  `json:"province"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 type CovidStats struct {
@@ -43,9 +44,9 @@ type Summary struct {
 
 type TimeSeriesDataPoint struct {
 	Location
-	Amount int64
-	New    int64
-	Status CaseStatus
+	Amount int64     `json:"amount"`
+	New    int64     `json:"new"`
+	Status string    `json:"status"`
 	Date   time.Time `json:"date"`
 }
 
@@ -57,6 +58,8 @@ type Service interface {
 	GetCountries() ([]Country, error)
 	GetGlobalStats() (*CovidStats, error)
 	GetSummary() (*Summary, error)
-	GetTimeSeries(countrySlug string, status CaseStatus) (*TimeSeries, error)
-	GetAggTimeSeries(countrySlug string, status CaseStatus) (*TimeSeries, error)
+	GetTimeSeries(countrySlug string, status string) (*TimeSeries, error)
+	GetAggTimeSeries(countrySlug string, status string) (*TimeSeries, error)
+	GetDbInstance() (*sql.DB, error)
+	Close() error
 }

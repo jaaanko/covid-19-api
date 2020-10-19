@@ -6,20 +6,24 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type mysql struct {
+type mySql struct {
 	db *sql.DB
 }
 
-func New(dataSourceName string) (Service, error) {
+func NewMySql(dataSourceName string) (Service, error) {
 	db, err := sql.Open("mysql", dataSourceName)
 	if err != nil {
 		return nil, err
 	}
 
-	return mysql{db}, db.Ping()
+	return mySql{db}, db.Ping()
 }
 
-func (m mysql) GetCountries() ([]Country, error) {
+func (m mySql) GetDbInstance() (*sql.DB, error) {
+	return m.db, m.db.Ping()
+}
+
+func (m mySql) GetCountries() ([]Country, error) {
 	rows, err := m.db.Query(`
 	select country,country_slug from recoveries_time_series group by country_slug
 	`)
@@ -45,7 +49,7 @@ func (m mysql) GetCountries() ([]Country, error) {
 	return countryList, rows.Err()
 }
 
-func (m mysql) GetGlobalStats() (*CovidStats, error) {
+func (m mySql) GetGlobalStats() (*CovidStats, error) {
 	row := m.db.QueryRow(`select cd.confirmed,cd.new_confirmed,cd.deaths,cd.new_deaths,r.recoveries,r.new_recoveries
 	from (
 		select SUM(confirmed_cases) confirmed, SUM(new_confirmed) new_confirmed, SUM(deaths) deaths, SUM(new_deaths) new_deaths
@@ -77,7 +81,7 @@ func (m mysql) GetGlobalStats() (*CovidStats, error) {
 	return globalStats, err
 }
 
-func (m mysql) GetSummary() (*Summary, error) {
+func (m mySql) GetSummary() (*Summary, error) {
 	rows, err := m.db.Query(`
 	select cd.country, cd.country_slug, cd.total_confirmed, cd.new_confirmed, cd.total_deaths, cd.new_deaths, r.total_recoveries, r.new_recoveries
 	from (
@@ -138,25 +142,25 @@ func (m mysql) GetSummary() (*Summary, error) {
 	return summary, rows.Err()
 }
 
-func (m mysql) GetTimeSeries(countrySlug string, status CaseStatus) (*TimeSeries, error) {
+func (m mySql) GetTimeSeries(countrySlug string, status string) (*TimeSeries, error) {
 	var (
 		rows *sql.Rows
 		err  error
 	)
 
-	if status == "Confirmed" {
+	if status == "confirmed" {
 		rows, err = m.db.Query(`
 		select country,country_slug,province,confirmed_cases,new_confirmed,latitude,longitude,date_recorded
 		from confirmed_and_deaths_time_series where country_slug = ?
 		`, countrySlug)
 	}
-	if status == "Recoveries" {
+	if status == "recoveries" {
 		rows, err = m.db.Query(`
 		select country,country_slug,province,recoveries,new_recoveries,latitude,longitude,date_recorded
 		from recoveries_time_series where country_slug = ?
 		`, countrySlug)
 	}
-	if status == "Deaths" {
+	if status == "deaths" {
 		rows, err = m.db.Query(`
 		select country,country_slug,province,deaths,new_deaths,latitude,longitude,date_recorded
 		from confirmed_and_deaths_time_series where country_slug = ?
@@ -179,8 +183,8 @@ func (m mysql) GetTimeSeries(countrySlug string, status CaseStatus) (*TimeSeries
 			&dataPoint.Province,
 			&dataPoint.Amount,
 			&dataPoint.New,
-			dataPoint.Latitude,
-			dataPoint.Longitude,
+			&dataPoint.Latitude,
+			&dataPoint.Longitude,
 			&dataPoint.Date,
 		)
 
@@ -196,26 +200,26 @@ func (m mysql) GetTimeSeries(countrySlug string, status CaseStatus) (*TimeSeries
 	return timeSeries, rows.Err()
 }
 
-func (m mysql) GetAggTimeSeries(countrySlug string, status CaseStatus) (*TimeSeries, error) {
+func (m mySql) GetAggTimeSeries(countrySlug string, status string) (*TimeSeries, error) {
 	var (
 		rows *sql.Rows
 		err  error
 	)
-	if status == "Confirmed" {
+	if status == "confirmed" {
 		rows, err = m.db.Query(`
 		select country,country_slug,SUM(confirmed_cases),SUM(new_confirmed),date_recorded 
 		from confirmed_and_deaths_time_series where country_slug = ? group by date_recorded
 		`, countrySlug)
 
 	}
-	if status == "Deaths" {
+	if status == "deaths" {
 		rows, err = m.db.Query(`
 		select country,country_slug,SUM(deaths),SUM(new_deaths),date_recorded 
 		from confirmed_and_deaths_time_series where country_slug = ? group by date_recorded
 		`, countrySlug)
 
 	}
-	if status == "Recoveries" {
+	if status == "recoveries" {
 		rows, err = m.db.Query(`
 		select country,country_slug,SUM(recoveries),SUM(new_recoveries),date_recorded 
 		from recoveries_time_series where country_slug = ? group by date_recorded
@@ -250,4 +254,8 @@ func (m mysql) GetAggTimeSeries(countrySlug string, status CaseStatus) (*TimeSer
 	}
 
 	return timeSeries, rows.Err()
+}
+
+func (m mySql) Close() error {
+	return m.db.Close()
 }
