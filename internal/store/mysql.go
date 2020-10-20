@@ -138,7 +138,6 @@ func (m mySql) GetSummary() (*Summary, error) {
 		summary.LocationStatsList = append(summary.LocationStatsList, locationStats)
 
 	}
-
 	return summary, rows.Err()
 }
 

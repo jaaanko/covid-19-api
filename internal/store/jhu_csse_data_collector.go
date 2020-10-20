@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"encoding/csv"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -12,10 +13,12 @@ import (
 	"time"
 )
 
-const (
-	confirmedSrc  = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"
-	deathsSrc     = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"
-	recoveriesSrc = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_recovered_global.csv"
+const baseUrl = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/"
+
+var (
+	confirmedSrc  = fmt.Sprintf("%stime_series_covid19_confirmed_global.csv", baseUrl)
+	deathsSrc     = fmt.Sprintf("%stime_series_covid19_deaths_global.csv", baseUrl)
+	recoveriesSrc = fmt.Sprintf("%stime_series_covid19_recovered_global.csv", baseUrl)
 )
 
 type jhuCsseDataCollector struct {
@@ -37,7 +40,6 @@ func (jhu jhuCsseDataCollector) UpdateConfirmedAndDeaths() error {
 	if err != nil {
 		return err
 	}
-
 	defer deathsResponse.Body.Close()
 
 	confirmedReader := csv.NewReader(confirmedResponse.Body)
@@ -132,7 +134,7 @@ func (jhu jhuCsseDataCollector) UpdateConfirmedAndDeaths() error {
 		return err
 	}
 
-	log.Println("Done with confirmed and deaths")
+	log.Println("Done updating confirmed and deaths")
 	return nil
 }
 
@@ -142,7 +144,6 @@ func (jhu jhuCsseDataCollector) UpdateRecoveries() error {
 	if err != nil {
 		return err
 	}
-
 	defer recoveriesResponse.Body.Close()
 
 	recoveriesReader := csv.NewReader(recoveriesResponse.Body)
@@ -214,7 +215,7 @@ func (jhu jhuCsseDataCollector) UpdateRecoveries() error {
 		return err
 	}
 
-	log.Println("Done with recoveries")
+	log.Println("Done updating recoveries")
 	return nil
 }
 

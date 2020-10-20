@@ -1,42 +1,34 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
-	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/jaaanko/covid-19-api/internal/server"
 	"github.com/jaaanko/covid-19-api/internal/store"
-)
-
-var (
-	start time.Time
-	st    store.Service
 )
 
 func main() {
 	initialTicker := time.NewTicker(1)
+	interval := 12 * time.Hour
 
-	ticker := time.NewTicker(12 * time.Hour)
+	ticker := time.NewTicker(interval)
 	done := make(chan (bool))
 
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASS")
+	dbUser := os.Getenv("COVID19_DB_USER")
+	dbPass := os.Getenv("COVID19_DB_PASS")
+	dbHost := os.Getenv("COVID19_DB_HOST")
+	dbPort := os.Getenv("COVID19_DB_PORT")
 
-	var err error
-
-	st, err = store.NewMySql(fmt.Sprintf("%s:%s@tcp(127.0.0.1:3306)/covid19?parseTime=true", dbUser, dbPass))
-
+	st, err := store.NewMySql(fmt.Sprintf("%s:%s@tcp(%s:%s)/covid19?parseTime=true", dbUser, dbPass, dbHost, dbPort))
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer st.Close()
 
 	db, err := st.GetDbInstance()
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,30 +38,20 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fetchData := func() {
-		var wg sync.WaitGroup
-		start = time.Now()
-
-		wg.Add(1)
+	updateData := func() {
 		go func() {
-			defer wg.Done()
 			err := dataCollector.UpdateConfirmedAndDeaths()
 			if err != nil {
 				log.Fatal(err)
 			}
 		}()
 
-		wg.Add(1)
 		go func() {
-			defer wg.Done()
 			err := dataCollector.UpdateRecoveries()
 			if err != nil {
 				log.Fatal(err)
 			}
 		}()
-
-		wg.Wait()
-		fmt.Printf("Took %s", time.Since(start))
 	}
 
 	go func() {
@@ -77,100 +59,21 @@ func main() {
 			select {
 			case <-initialTicker.C:
 				initialTicker.Stop()
-				fetchData()
+				updateData()
 			case <-ticker.C:
-				fetchData()
+				updateData()
 			case <-done:
 				ticker.Stop()
 			}
 		}
 	}()
 
-	router := mux.NewRouter()
+	s := server.New(st)
+	serverPort := os.Getenv("COVID19_SERVER_PORT")
 
-	router.HandleFunc("/list/countries", countriesList).Methods("GET")
-	router.HandleFunc("/world", world).Methods("GET")
-	router.HandleFunc("/summary", summary).Methods("GET")
-	router.HandleFunc("/timeseries/{countryslug}/{stat}", timeSeries).Methods("GET")
-	router.HandleFunc("/timeseries/total/{countryslug}/{stat}", timeSeriesTotal).Methods("GET")
-
-	http.ListenAndServe(":8080", router)
-}
-
-func countriesList(w http.ResponseWriter, r *http.Request) {
-
-	countries, err := st.GetCountries()
+	err = s.Run(fmt.Sprintf(":%s", serverPort))
 
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	countryListResponse := struct {
-		Countries []store.Country `json:"countries"`
-	}{
-		countries,
-	}
-
-	response, _ := json.Marshal(countryListResponse)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write(response)
-}
-
-func world(w http.ResponseWriter, r *http.Request) {
-
-	worldSummaryResponse, err := st.GetGlobalStats()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	response, _ := json.Marshal(worldSummaryResponse)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write(response)
-}
-
-func timeSeriesTotal(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	aggTimeSeriesResponse, err := st.GetAggTimeSeries(vars["countryslug"], vars["stat"])
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	response, _ := json.Marshal(aggTimeSeriesResponse)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write(response)
-}
-
-func timeSeries(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	if vars["stat"] != store.Confirmed && vars["stat"] != store.Recoveries && vars["stat"] != store.Deaths {
-		log.Fatal("Invalid status")
-	}
-
-	timeSeriesResponse, err := st.GetTimeSeries(vars["countryslug"], vars["stat"])
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	response, _ := json.Marshal(timeSeriesResponse)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write(response)
-}
-
-func summary(w http.ResponseWriter, r *http.Request) {
-	summaryResponse, err := st.GetSummary()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	response, _ := json.Marshal(summaryResponse)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write(response)
 }
