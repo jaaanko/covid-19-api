@@ -26,7 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer st.Close()
 
 	db, err := st.GetDbInstance()
 	if err != nil {

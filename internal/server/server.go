@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
@@ -14,15 +15,19 @@ type Server struct {
 	handler http.Handler
 }
 
+type errorResponse struct {
+	Error string `json:"error"`
+}
+
 func New(store store.Service) *Server {
 	s := &Server{store: store}
 	router := mux.NewRouter()
 
-	router.HandleFunc("/list/countries", s.getCountriesList).Methods("GET")
-	router.HandleFunc("/global", s.getGlobalStats).Methods("GET")
-	router.HandleFunc("/summary", s.getSummary).Methods("GET")
-	router.Handle("/timeseries/{countryslug}/{status}", statusMiddleware(http.HandlerFunc(s.getTimeSeries))).Methods("GET")
-	router.Handle("/timeseries/total/{countryslug}/{status}", statusMiddleware(http.HandlerFunc(s.getAggTimeSeries))).Methods("GET")
+	router.HandleFunc("/list/countries", s.GetCountries).Methods("GET")
+	router.HandleFunc("/global", s.GetGlobalStats).Methods("GET")
+	router.HandleFunc("/summary", s.GetSummary).Methods("GET")
+	router.Handle("/timeseries/{countryslug}/{status}", StatusMiddleware(http.HandlerFunc(s.GetTimeSeries))).Methods("GET")
+	router.Handle("/timeseries/total/{countryslug}/{status}", StatusMiddleware(http.HandlerFunc(s.GetAggTimeSeries))).Methods("GET")
 
 	s.handler = router
 	return s
@@ -32,63 +37,61 @@ func (s *Server) Run(addr string) error {
 	return http.ListenAndServe(addr, s.handler)
 }
 
-func writeJSONResponse(w http.ResponseWriter, p interface{}, statusCode int, err error) {
-	var payload interface{}
-
+func writeJSONResponse(w http.ResponseWriter, data interface{}) {
+	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		payload = map[string]string{"error": err.Error()}
-	} else {
-		payload = p
+		writeError(w, http.StatusInternalServerError, err)
 	}
-
-	w.WriteHeader(statusCode)
-
-	json.NewEncoder(w).Encode(payload)
 }
 
-func (s *Server) getCountriesList(w http.ResponseWriter, r *http.Request) {
+func writeError(w http.ResponseWriter, statusCode int, err error) {
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(&errorResponse{Error: err.Error()})
+}
+
+func (s *Server) GetCountries(w http.ResponseWriter, r *http.Request) {
 	countries, err := s.store.GetCountries()
 
 	if err != nil {
-		writeJSONResponse(w, nil, http.StatusInternalServerError, err)
+		writeError(w, http.StatusInternalServerError, err)
 	} else {
-		writeJSONResponse(w, map[string][]store.Country{"countries": countries}, http.StatusOK, nil)
+		writeJSONResponse(w, countries)
 	}
 }
 
-func (s *Server) getGlobalStats(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetGlobalStats(w http.ResponseWriter, r *http.Request) {
 	globalStats, err := s.store.GetGlobalStats()
 
 	if err != nil {
-		writeJSONResponse(w, nil, http.StatusInternalServerError, err)
+		writeError(w, http.StatusInternalServerError, err)
 	} else {
-		writeJSONResponse(w, globalStats, http.StatusOK, nil)
+		writeJSONResponse(w, globalStats)
 	}
 }
 
-func (s *Server) getSummary(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetSummary(w http.ResponseWriter, r *http.Request) {
 	summary, err := s.store.GetSummary()
 
 	if err != nil {
-		writeJSONResponse(w, nil, http.StatusInternalServerError, err)
+		writeError(w, http.StatusInternalServerError, err)
 	} else {
-		writeJSONResponse(w, summary, http.StatusOK, nil)
+		writeJSONResponse(w, summary)
 	}
 }
 
-func (s *Server) getTimeSeries(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetTimeSeries(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	timeSeries, err := s.store.GetTimeSeries(vars["countryslug"], vars["status"])
 
 	if err != nil {
-		writeJSONResponse(w, nil, http.StatusInternalServerError, err)
+		writeError(w, http.StatusInternalServerError, err)
 	} else {
-		writeJSONResponse(w, timeSeries, http.StatusOK, nil)
+		writeJSONResponse(w, timeSeries)
 	}
 }
 
-func (s *Server) getAggTimeSeries(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetAggTimeSeries(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	aggTimeSeries, err := s.store.GetAggTimeSeries(vars["countryslug"], vars["status"])
@@ -97,21 +100,24 @@ func (s *Server) getAggTimeSeries(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		writeJSONResponse(w, nil, http.StatusInternalServerError, err)
+		writeError(w, http.StatusInternalServerError, err)
 	} else {
-		writeJSONResponse(w, aggTimeSeries, http.StatusOK, nil)
+		writeJSONResponse(w, aggTimeSeries)
 	}
 }
 
-func statusMiddleware(next http.Handler) http.Handler {
+func StatusMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 
 		if vars["status"] != store.Confirmed && vars["status"] != store.Recoveries && vars["status"] != store.Deaths {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			writeError(
+				w,
+				http.StatusBadRequest,
+				errors.New("Invalid status. Please select from the following: confirmed, recoveries, deaths"),
+			)
 			return
 		}
-
 		next.ServeHTTP(w, r)
 	})
 }
