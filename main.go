@@ -23,7 +23,11 @@ func main() {
 	dbPort := os.Getenv("COVID19_DB_PORT")
 	dbName := os.Getenv("COVID19_DB_NAME")
 
-	st, err := store.NewMySql(fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPass, dbHost, dbPort, dbName))
+	var st store.Service
+	err := retry(5, 5*time.Second, func() (err error) {
+		st, err = store.NewMySql(fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPass, dbHost, dbPort, dbName))
+		return
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,4 +80,22 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func retry(attempts int, sleep time.Duration, f func() error) (err error) {
+	for i := 0; ; i++ {
+		err = f()
+		if err == nil {
+			return
+		}
+
+		if i >= (attempts - 1) {
+			break
+		}
+
+		log.Println("error occured:", err)
+
+		time.Sleep(sleep)
+	}
+	return err
 }
