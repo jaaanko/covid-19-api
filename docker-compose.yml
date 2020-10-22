@@ -1,27 +1,27 @@
 version: '3'
 services:
-    app:
-        build:
-            context: .
-            args:
-                - PORT:"${COVID19_SERVER_PORT}"
-        restart: on-failure
-        container_name: covid19_backend
-        ports:
-            - "${COVID19_SERVER_PORT}:${COVID19_SERVER_PORT}"
-        depends_on:
-            - db
-        env_file:
-            - .env
-    db:
-        image: mysql
-        container_name: db_mysql
-        ports:
-            - "${COVID19_DB_PORT}:${COVID19_DB_PORT}"
-        environment:
-         - MYSQL_DATABASE="${COVID19_DB_NAME}"
-         - MYSQL_USER="${COVID19_DB_USER}"
-         - MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASS}"
-         - MYSQL_PASSWORD="${COVID19_DB_PASS}"
-        volumes:
-            - ./mysql_init:/docker-entrypoint-initdb.d
+  app:
+    build:
+      context: .
+      args:
+        - PORT:"${COVID19_SERVER_PORT}"
+    restart: on-failure
+    container_name: covid19_backend
+    ports:
+      - "${COVID19_SERVER_PORT}:${COVID19_SERVER_PORT}"
+    depends_on:
+      - db
+    env_file:
+      - .env
+  db:
+    image: mysql
+    container_name: db_mysql
+    ports:
+      - "${COVID19_DB_PORT}:${COVID19_DB_PORT}"
+    environment:
+      - MYSQL_DATABASE=${COVID19_DB_NAME}
+      - MYSQL_USER=${COVID19_DB_USER}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASS}
+      - MYSQL_PASSWORD=${COVID19_DB_PASS}
+    volumes:
+      - ./mysql_init:/docker-entrypoint-initdb.d
