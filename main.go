@@ -21,8 +21,9 @@ func main() {
 	dbPass := os.Getenv("COVID19_DB_PASS")
 	dbHost := os.Getenv("COVID19_DB_HOST")
 	dbPort := os.Getenv("COVID19_DB_PORT")
+	dbName := os.Getenv("COVID19_DB_NAME")
 
-	st, err := store.NewMySql(fmt.Sprintf("%s:%s@tcp(%s:%s)/covid19?parseTime=true", dbUser, dbPass, dbHost, dbPort))
+	st, err := store.NewMySql(fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPass, dbHost, dbPort, dbName))
 	if err != nil {
 		log.Fatal(err)
 	}
