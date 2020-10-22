@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -95,9 +94,6 @@ func (s *Server) GetAggTimeSeries(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	aggTimeSeries, err := s.store.GetAggTimeSeries(vars["countryslug"], vars["status"])
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
