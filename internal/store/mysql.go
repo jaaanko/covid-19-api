@@ -25,7 +25,7 @@ func (m mySql) GetDbInstance() (*sql.DB, error) {
 
 func (m mySql) GetCountries() ([]Country, error) {
 	rows, err := m.db.Query(`
-	select country,country_slug from recoveries_time_series group by country_slug
+	select country,country_slug from recoveries_time_series group by country_slug, country
 	`)
 
 	if err != nil {
@@ -90,7 +90,7 @@ func (m mySql) GetSummary() (*Summary, error) {
 		where date_recorded = (
 			select MAX(date_recorded) from confirmed_and_deaths_time_series where country_slug = "France"
 		)
-		group by country_slug
+		group by country_slug, country
 	) cd
 	join (
 		select country_slug, sum(recoveries) total_recoveries, sum(new_recoveries) new_recoveries
@@ -207,21 +207,21 @@ func (m mySql) GetAggTimeSeries(countrySlug string, status string) (*TimeSeries,
 	if status == "confirmed" {
 		rows, err = m.db.Query(`
 		select country,country_slug,SUM(confirmed_cases),SUM(new_confirmed),date_recorded 
-		from confirmed_and_deaths_time_series where country_slug = ? group by date_recorded
+		from confirmed_and_deaths_time_series where country_slug = ? group by date_recorded,country_slug,country
 		`, countrySlug)
 
 	}
 	if status == "deaths" {
 		rows, err = m.db.Query(`
 		select country,country_slug,SUM(deaths),SUM(new_deaths),date_recorded 
-		from confirmed_and_deaths_time_series where country_slug = ? group by date_recorded
+		from confirmed_and_deaths_time_series where country_slug = ? group by date_recorded,country_slug,country
 		`, countrySlug)
 
 	}
 	if status == "recoveries" {
 		rows, err = m.db.Query(`
 		select country,country_slug,SUM(recoveries),SUM(new_recoveries),date_recorded 
-		from recoveries_time_series where country_slug = ? group by date_recorded
+		from recoveries_time_series where country_slug = ? group by date_recorded,country_slug,country
 		`, countrySlug)
 	}
 
