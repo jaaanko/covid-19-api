@@ -58,7 +58,7 @@ func (s *Server) Default(w http.ResponseWriter, r *http.Request) {
 	routes := []Route{
 		Route{
 			Path: "/list/countries",
-			Description: "Returns a list of countries with their name and slug." +
+			Description: "Returns a list of countries with their name and slug. " +
 				"Please use the country slug when requesting for data for a specific country.",
 		},
 		Route{
@@ -71,19 +71,19 @@ func (s *Server) Default(w http.ResponseWriter, r *http.Request) {
 		},
 		Route{
 			Path: "/timeseries/{countryslug}/{status}",
-			Description: "Returns the history of either confirmed cases, recoveries, and deaths:" +
-				"of the specified country and each of its provinces" +
-				"starting from Jan. 22, 2020." +
-				"{countryslug} must be a valid country slug from '/list/countries'." +
+			Description: "Returns the history of either confirmed cases, recoveries, and deaths " +
+				"of the specified country and each of its provinces " +
+				"starting from Jan. 22, 2020. " +
+				"{countryslug} must be a valid country slug from '/list/countries'. " +
 				"{status} must be one of the following: [confirmed, recoveries, deaths].",
 		},
 		Route{
 			Path: "/timeseries/total/{countryslug}/{status}",
-			Description: "Returns the history of either confirmed cases, recoveries, and deaths" +
-				"of the specified country starting from Jan. 22, 2020." +
-				"Unlike '/timeseries/{countryslug}/{status}', this route does not return a country's provinces." +
-				"Instead, the data is all summed up." +
-				"{countryslug} must be a valid country slug from '/list/countries'." +
+			Description: "Returns the history of either confirmed cases, recoveries, and deaths " +
+				"of the specified country starting from Jan. 22, 2020. " +
+				"Unlike '/timeseries/{countryslug}/{status}', this route does not return a country's provinces ." +
+				"Instead, the data is all summed up. " +
+				"{countryslug} must be a valid country slug from '/list/countries'. " +
 				"{status} must be one of the following: [confirmed, recoveries, deaths].",
 		},
 	}
