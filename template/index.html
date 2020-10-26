@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Routes</title>
+	<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+	<div class="wrapper">
+		<div class="list_wrap">
+			<ul>
+				<li>
+					<div class="list">
+						<div class="content">
+							<p class="route">/list/countries</p>
+							<br>
+							Returns a list of countries with their name and slug. 
+							Please use the country slug when requesting data for a specific country.
+						</div>
+					</div>
+				</li>
+				<li>
+					<div class="list">
+						<div class="content">
+							<p class="route">/global</p>
+							<br>
+							Returns the number of confirmed cases, recoveries, and deaths globally.
+						</div>				
+					</div>
+				</li>
+				<li>
+					<div class="list">
+						<div class="content">
+							<p class="route">/summary</p>
+							<br>
+							Returns the number of confirmed cases, recoveries, and deaths both globally and per country.
+						</div>				
+					</div>
+				</li>
+				<li>
+					<div class="list">
+						<div class="content">
+							<p class="route">/timeseries/{countryslug}/{status}</p>
+							<br>
+							Returns the history of either confirmed cases, recoveries, 
+							and deaths of the specified country and each of its provinces starting from Jan. 22, 2020. 
+							{countryslug} must be a valid country slug from '/list/countries'. 
+							{status} must be one of the following: [confirmed, recoveries, deaths].
+						</div>
+					</div>
+				</li>
+				<li>
+					<div class="list">
+						<div class="content">
+							<p class="route">/timeseries/total/{countryslug}/{status} </p>
+							<br>
+							Returns the history of either confirmed cases, recoveries, 
+							and deaths of the specified country starting from Jan. 22, 2020. 
+							Unlike '/timeseries/{countryslug}/{status}', this route does not return a country's provinces. 
+							Instead, the data is all summed up. {countryslug} must be a valid country slug from '/list/countries'. 
+							{status} must be one of the following: [confirmed, recoveries, deaths].
+						</div>
+					</div>
+				</li>
+			</ul>
+		</div>
+	</div>
+	<div class="footer">
+		<p>Data is fetched from the <a href="https://github.com/CSSEGISandData/COVID-19">COVID-19 Data Repository by the Center for Systems Science and Engineering (CSSE) 
+			at Johns Hopkins University</a>.</p>
+	</div>
+</body>
+</html>
