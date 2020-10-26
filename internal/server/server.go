@@ -3,7 +3,10 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"html/template"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 	"github.com/jaaanko/covid-19-api/internal/store"
@@ -26,8 +29,10 @@ type Route struct {
 func New(store store.Service) *Server {
 	s := &Server{store: store}
 	router := mux.NewRouter()
+	fh := http.FileServer(http.Dir("./template/css/"))
 
-	router.HandleFunc("/", s.Default).Methods("GET")
+	router.PathPrefix("/css/").Handler(http.StripPrefix("/css/", fh))
+	router.HandleFunc("/", s.Routes).Methods("GET")
 	router.HandleFunc("/list/countries", s.GetCountries).Methods("GET")
 	router.HandleFunc("/global", s.GetGlobalStats).Methods("GET")
 	router.HandleFunc("/summary", s.GetSummary).Methods("GET")
@@ -54,41 +59,21 @@ func writeError(w http.ResponseWriter, statusCode int, err error) {
 	json.NewEncoder(w).Encode(&errorResponse{Error: err.Error()})
 }
 
-func (s *Server) Default(w http.ResponseWriter, r *http.Request) {
-	routes := []Route{
-		Route{
-			Path: "/list/countries",
-			Description: "Returns a list of countries with their name and slug. " +
-				"Please use the country slug when requesting for data for a specific country.",
-		},
-		Route{
-			Path:        "/global",
-			Description: "Returns the number of confirmed cases, recoveries, and deaths globally.",
-		},
-		Route{
-			Path:        "/summary",
-			Description: "Returns the number of confirmed cases, recoveries, and deaths both globally and per country.",
-		},
-		Route{
-			Path: "/timeseries/{countryslug}/{status}",
-			Description: "Returns the history of either confirmed cases, recoveries, and deaths " +
-				"of the specified country and each of its provinces " +
-				"starting from Jan. 22, 2020. " +
-				"{countryslug} must be a valid country slug from '/list/countries'. " +
-				"{status} must be one of the following: [confirmed, recoveries, deaths].",
-		},
-		Route{
-			Path: "/timeseries/total/{countryslug}/{status}",
-			Description: "Returns the history of either confirmed cases, recoveries, and deaths " +
-				"of the specified country starting from Jan. 22, 2020. " +
-				"Unlike '/timeseries/{countryslug}/{status}', this route does not return a country's provinces ." +
-				"Instead, the data is all summed up. " +
-				"{countryslug} must be a valid country slug from '/list/countries'. " +
-				"{status} must be one of the following: [confirmed, recoveries, deaths].",
-		},
+func (s *Server) Routes(w http.ResponseWriter, r *http.Request) {
+	dir, err := os.Getwd()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
 	}
 
-	writeJSONResponse(w, routes)
+	tpl, err := template.ParseFiles(filepath.Join(dir, "template", "index.html"))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+	}
+
+	err = tpl.Execute(w, nil)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+	}
 }
 
 func (s *Server) GetCountries(w http.ResponseWriter, r *http.Request) {
