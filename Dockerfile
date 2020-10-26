@@ -19,4 +19,4 @@ RUN go build -o main .
 
 EXPOSE ${PORT}
 
-CMD ["/dist/main"]
+CMD ["/build/main"]
