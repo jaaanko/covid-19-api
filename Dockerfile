@@ -17,10 +17,6 @@ COPY . .
 
 RUN go build -o main .
 
-WORKDIR /dist
-
-RUN cp /build/main .
-
 EXPOSE ${PORT}
 
 CMD ["/dist/main"]
