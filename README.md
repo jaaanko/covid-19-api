@@ -2,7 +2,7 @@
 Data is fetched from the [COVID-19 Data Repository by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University](https://github.com/CSSEGISandData/COVID-19).
 ## Routes
 
-Base URL : [covid19trackingapi.com](covid19trackingapi.com)
+Base URL : [covid19trackingapi.com](https://covid19trackingapi.com)
 
 Paths : <br><br>
 <b>/list/countries</b> : Returns a list of countries with their name and slug. Please use the country slug when requesting data for a specific country.<br><br>
