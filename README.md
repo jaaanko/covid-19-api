@@ -1,11 +1,11 @@
 # covid-19-api
-
+Data is fetched from the [COVID-19 Data Repository by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University](https://github.com/CSSEGISandData/COVID-19).
 ## Routes
 
-Base URL : <b>covid19trackingapi.com</b>
+Base URL : [covid19trackingapi.com](covid19trackingapi.com)
 
 Paths : <br><br>
-<b>/list/countries</b> : Returns a list of countries with their name and slug. Please use the country slug when requesting for data for a specific country.<br><br>
+<b>/list/countries</b> : Returns a list of countries with their name and slug. Please use the country slug when requesting data for a specific country.<br><br>
 <b>/global</b> : Returns the number of confirmed cases, recoveries, and deaths globally.<br><br>
 <b>/summary</b> : Returns the number of confirmed cases, recoveries, and deaths both globally and per country.<br><br>
 <b>/timeseries/{countryslug}/{status}</b> : Returns the history of either confirmed cases, recoveries, and deaths of the 
