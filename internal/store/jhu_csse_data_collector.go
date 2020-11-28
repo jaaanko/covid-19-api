@@ -92,12 +92,12 @@ func (jhu jhuCsseDataCollector) UpdateConfirmedAndDeaths() error {
 			return err
 		}
 
-		lat, err := strconv.ParseFloat(confirmedRow[2], 64)
+		lat, err := parseFloatWithCheck(confirmedRow[2], 64)
 		if err != nil {
 			return err
 		}
 
-		long, err := strconv.ParseFloat(confirmedRow[3], 64)
+		long, err := parseFloatWithCheck(confirmedRow[3], 64)
 		if err != nil {
 			return err
 		}
@@ -180,12 +180,12 @@ func (jhu jhuCsseDataCollector) UpdateRecoveries() error {
 			return err
 		}
 
-		lat, err := strconv.ParseFloat(row[2], 64)
+		lat, err := parseFloatWithCheck(row[2], 64)
 		if err != nil {
 			return err
 		}
 
-		long, err := strconv.ParseFloat(row[3], 64)
+		long, err := parseFloatWithCheck(row[3], 64)
 		if err != nil {
 			return err
 		}
@@ -234,4 +234,11 @@ func max(x, y int) int {
 		return y
 	}
 	return x
+}
+
+func parseFloatWithCheck(s string, bitSize int) (float64, error) {
+	if s == "" {
+		return strconv.ParseFloat("0.0", bitSize)
+	}
+	return strconv.ParseFloat(s, bitSize)
 }
